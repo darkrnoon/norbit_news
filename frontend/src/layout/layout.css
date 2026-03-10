@@ -1,0 +1,30 @@
+.app {
+  min-height: 100vh;
+  background: #f4f6f8;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 220px 780px 320px;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.left, .center, .right {
+  min-height: calc(100vh - 72px);
+}
+
+.center {
+  width: 100%;
+  /* НЕ ограничиваем ширину глобально, иначе ломаем CommunitiesPage */
+}
+
+.errorBox {
+  padding: 10px 12px;
+  border: 1px solid #f5c2c7;
+  background: #f8d7da;
+  color: #842029;
+  border-radius: 8px;
+}

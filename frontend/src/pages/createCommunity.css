@@ -1,0 +1,91 @@
+.createCommunityPage {
+  display: flex;
+  justify-content: center;
+  padding-top: 60px;
+}
+
+.createCommunityCard {
+  width: 520px;
+  background: white;
+  border: 1px solid #e6e8ee;
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.createCommunityBack {
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.createCommunityTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.createCommunitySub {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+
+.fieldInput {
+  width: 100%;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.fieldTextarea {
+  width: 100%;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 14px;
+  min-height: 80px;
+  resize: vertical;
+}
+
+.createCommunityButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.createCommunitySubmit {
+  flex: 1;
+  background: #0f2d52;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.createCommunitySubmit:hover {
+  background: #173a66;
+}
+
+.createCommunityCancel {
+  background: #f3f4f7;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.formError {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+}

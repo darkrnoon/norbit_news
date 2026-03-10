@@ -1,0 +1,152 @@
+.header {
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e6e8ee;
+}
+
+.headerInner {
+  height: 56px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* бренд слева, действия справа */
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #0b2d4f;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.brandName {
+  font-weight: 700;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.createBtn {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #0b2d4f;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profileWrap {
+  position: relative;
+}
+
+.profileBtn {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #e6e8ee;
+  background: #fff;
+  cursor: pointer;
+}
+
+.profileBtn:hover {
+  background: #f6f8fb;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #eef2f7;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-weight: 700;
+  font-size: 12px;
+  color: #0b2d4f;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meText {
+  display: grid;
+  line-height: 1.1;
+  text-align: left;
+}
+
+.meName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.meSub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.chev {
+  margin-left: 2px;
+  font-size: 12px;
+  color: #6b7280;
+  transform: translateY(-1px);
+  transition: transform 0.15s ease;
+}
+
+.chev.up {
+  transform: rotate(180deg) translateY(1px);
+}
+
+.profileMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 160px;
+
+  background: #fff;
+  border: 1px solid #e6e8ee;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(16, 24, 40, 0.12);
+  padding: 6px;
+  z-index: 20;
+}
+
+.menuItem {
+  width: 100%;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.menuItem:hover {
+  background: #eef2f7;
+}
