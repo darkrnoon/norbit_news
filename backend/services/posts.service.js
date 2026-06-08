@@ -1,247 +1,738 @@
-// services/posts.service.js
-const prisma = require("../db/prisma");
+const prisma = require("../utils/prisma");
 const httpError = require("../utils/httpError");
-const { ensureOwnerOrModerator } = require("./ownership.service");
-const { canPinPosts } = require("./permission.service");
+const { deleteFilesByUrls } = require("../utils/file.utils");
 
-// Единый include для всех выдач постов (ФИО/должность/аватар автора + сообщество + закреп + вложения)
+const {
+  ensurePostOwner,
+  ensureCanDeletePost,
+} = require("./ownership.service");
+
+const {
+  canModerate,
+  canPinPosts,
+} = require("./permission.service");
+
+const {
+  DISPLAY_ROLE_NAMES,
+} = require("../utils/roles");
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 const postInclude = {
-  post_pins: { where: { is_active: true } },
-  communities: { select: { community_id: true, name: true } },
-  attachments: true,
+  communities: {
+    select: {
+      community_id: true,
+      name: true,
+      photo_url: true,
+    },
+  },
+
+  attachments: {
+    select: {
+      attachment_id: true,
+      file_url: true,
+      uploaded_at: true,
+    },
+  },
+
+  post_pins: {
+    where: {
+      is_active: true,
+      OR: [
+        { pinned_until: null },
+        { pinned_until: { gt: new Date() } },
+      ],
+    },
+    select: {
+      pin_id: true,
+      pinned_at: true,
+      pinned_until: true,
+      is_active: true,
+      pinned_by_user_id: true,
+    },
+  },
+
   users: {
     select: {
       user_id: true,
       login: true,
-      role_id: true,
+      roles: {
+        select: {
+          role_id: true,
+          name: true,
+        },
+      },
       contacts: {
         select: {
-          full_name: true,
-          position: true,
+          contact_id: true,
           avatar: true,
+          full_name: true,
+        },
+      },
+    },
+  },
+
+  _count: {
+    select: {
+      post_likes: true,
+      post_comments: {
+        where: {
+          deleted_at: null,
         },
       },
     },
   },
 };
 
-exports.createPost = async ({ authorUserId, title, content, communityId, isCommunityPost }) => {
+function isImageFile(fileUrl) {
+  return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fileUrl);
+}
+
+function normalizePost(post, currentUserId, currentUserRoleName) {
+  const isPinned = post.post_pins.length > 0;
+  const isOwner = Number(post.author_user_id) === Number(currentUserId);
+
+  const authorRoleName = post.users.roles.name;
+  const shouldDisplayAuthorRole = DISPLAY_ROLE_NAMES.includes(authorRoleName);
+
+  const canEdit = isOwner;
+  const canDelete = isOwner || canModerate(currentUserRoleName);
+  const canPin = canPinPosts(currentUserRoleName);
+
+  return {
+    post_id: post.post_id,
+    title: post.title,
+    content: post.content,
+    published_at: post.published_at,
+    updated_at: post.updated_at,
+
+    is_community_post: post.is_community_post,
+    is_pinned: isPinned,
+
+    source: post.is_community_post && post.communities
+      ? {
+          type: "community",
+          label: "Сообщество",
+          community_id: post.communities.community_id,
+          name: post.communities.name,
+          photo_url: post.communities.photo_url,
+        }
+      : {
+          type: "user",
+          label: "Пользователь",
+        },
+
+    community: post.communities
+      ? {
+          community_id: post.communities.community_id,
+          name: post.communities.name,
+          photo_url: post.communities.photo_url,
+        }
+      : null,
+
+    author: {
+      user_id: post.users.user_id,
+      login: post.users.login,
+      avatar: post.users.contacts?.avatar ?? null,
+      full_name: post.users.contacts?.full_name ?? "Пользователь",
+      role: {
+        role_id: post.users.roles.role_id,
+        name: authorRoleName,
+        should_display: shouldDisplayAuthorRole,
+      },
+    },
+
+    attachments: post.attachments.map((attachment) => ({
+      attachment_id: attachment.attachment_id,
+      file_url: attachment.file_url,
+      uploaded_at: attachment.uploaded_at,
+      type: isImageFile(attachment.file_url) ? "image" : "file",
+    })),
+
+    counters: {
+      likes: post._count.post_likes,
+      comments: post._count.post_comments,
+    },
+
+    permissions: {
+      can_edit: canEdit,
+      can_delete: canDelete,
+      can_pin: canPin,
+    },
+
+    pin: isPinned
+      ? {
+          pin_id: post.post_pins[0].pin_id,
+          pinned_at: post.post_pins[0].pinned_at,
+          pinned_until: post.post_pins[0].pinned_until,
+        }
+      : null,
+  };
+}
+
+function normalizePosts(posts, currentUserId, currentUserRoleName) {
+  return posts.map((post) =>
+    normalizePost(post, currentUserId, currentUserRoleName)
+  );
+}
+
+async function ensureCommunityPostAvailable({ communityId, userId }) {
+  if (!communityId) {
+    throw httpError(400, "Выберите сообщество для публикации новости");
+  }
+
+  const community = await prisma.communities.findUnique({
+    where: {
+      community_id: Number(communityId),
+    },
+    select: {
+      community_id: true,
+      deleted_at: true,
+    },
+  });
+
+  if (!community || community.deleted_at) {
+    throw httpError(404, "Сообщество не найдено");
+  }
+
+  const subscription = await prisma.community_subscriptions.findUnique({
+    where: {
+      community_id_user_id: {
+        community_id: Number(communityId),
+        user_id: Number(userId),
+      },
+    },
+    select: {
+      is_active: true,
+    },
+  });
+
+  if (!subscription || !subscription.is_active) {
+    throw httpError(
+      403,
+      "Публикация от лица сообщества доступна только подписчикам этого сообщества"
+    );
+  }
+}
+
+function prepareAttachments(attachments) {
+  if (!Array.isArray(attachments)) return [];
+
+  return attachments
+    .filter((item) => item && typeof item.file_url === "string")
+    .map((item) => ({
+      file_url: item.file_url,
+    }));
+}
+
+exports.createPost = async ({
+  authorUserId,
+  currentUserRoleName,
+  title,
+  content,
+  communityId,
+  isCommunityPost,
+  attachments = [],
+}) => {
+  const normalizedTitle = title?.trim() || null;
+  const normalizedContent = content?.trim() || null;
   const isCommunity = Boolean(isCommunityPost);
 
-  // Если пост "от лица сообщества" — communityId обязателен
+  if (!normalizedTitle && !normalizedContent && attachments.length === 0) {
+    throw httpError(
+      400,
+      "Новость должна содержать заголовок, текст или вложение"
+    );
+  }
+
   if (isCommunity) {
-    if (!communityId) throw httpError(400, "community_id is required for community post");
-
-    // Проверяем подписку пользователя на сообщество
-    const sub = await prisma.community_subscriptions.findUnique({
-      where: {
-        community_id_user_id: {
-          community_id: Number(communityId),
-          user_id: Number(authorUserId),
-        },
-      },
-      select: { is_active: true },
+    await ensureCommunityPostAvailable({
+      communityId,
+      userId: authorUserId,
     });
-
-    if (!sub || !sub.is_active) throw httpError(403, "You are not subscribed to this community");
-
-    // Проверяем, что сообщество не удалено
-    const community = await prisma.communities.findUnique({
-      where: { community_id: Number(communityId) },
-      select: { deleted_at: true },
-    });
-    if (!community || community.deleted_at) throw httpError(404, "Community not found");
   }
 
   const post = await prisma.posts.create({
     data: {
       author_user_id: Number(authorUserId),
-      title: title ?? null,
-      content: content ?? null,
+      title: normalizedTitle,
+      content: normalizedContent,
       community_id: isCommunity ? Number(communityId) : null,
       is_community_post: isCommunity,
+
+      attachments: attachments.length
+        ? {
+            create: attachments.map((attachment) => ({
+              file_url: attachment.file_url,
+            })),
+          }
+        : undefined,
     },
     include: postInclude,
   });
 
-  return post;
+  return normalizePost(post, authorUserId, currentUserRoleName);
 };
 
-exports.getPostById = async (postId) => {
+exports.getPostById = async ({
+  postId,
+  currentUserId,
+  currentUserRoleName,
+}) => {
   const post = await prisma.posts.findUnique({
-    where: { post_id: Number(postId) },
+    where: {
+      post_id: Number(postId),
+    },
     include: postInclude,
   });
 
-  if (!post || post.deleted_at) throw httpError(404, "Post not found");
-  return post;
-};
-
-exports.updatePost = async ({ postId, actorUserId, actorRoleId, title, content, communityId, isCommunityPost }) => {
-  const post = await prisma.posts.findUnique({
-    where: { post_id: Number(postId) },
-    select: { post_id: true, author_user_id: true, deleted_at: true },
-  });
-  if (!post || post.deleted_at) throw httpError(404, "Post not found");
-
-  ensureOwnerOrModerator({ actorUserId: Number(actorUserId), actorRoleId: Number(actorRoleId), ownerUserId: post.author_user_id });
-
-  const isCommunity = Boolean(isCommunityPost);
-
-  // если делаем пост от сообщества — проверяем подписку
-  if (isCommunity) {
-    if (!communityId) throw httpError(400, "community_id is required for community post");
-
-    const sub = await prisma.community_subscriptions.findUnique({
-      where: {
-        community_id_user_id: {
-          community_id: Number(communityId),
-          user_id: Number(actorUserId),
-        },
-      },
-      select: { is_active: true },
-    });
-
-    if (!sub || !sub.is_active) throw httpError(403, "You are not subscribed to this community");
+  if (!post || post.deleted_at) {
+    throw httpError(404, "Новость не найдена");
   }
 
-  return prisma.posts.update({
-    where: { post_id: Number(postId) },
-    data: {
-      title: title ?? undefined,
-      content: content ?? undefined,
-      community_id: isCommunity ? Number(communityId) : null,
-      is_community_post: isCommunity,
-      updated_at: new Date(),
-    },
-    include: postInclude,
-  });
+  return normalizePost(post, currentUserId, currentUserRoleName);
 };
 
-exports.deletePost = async ({ postId, actorUserId, actorRoleId }) => {
+exports.updatePost = async ({
+  postId,
+  actorUserId,
+  currentUserRoleName,
+  title,
+  content,
+  communityId,
+  isCommunityPost,
+  attachments = [],
+  replaceAttachments = false,
+}) => {
   const post = await prisma.posts.findUnique({
-    where: { post_id: Number(postId) },
-    select: { post_id: true, author_user_id: true, deleted_at: true },
+    where: {
+      post_id: Number(postId),
+    },
+    select: {
+      post_id: true,
+      author_user_id: true,
+      deleted_at: true,
+      attachments: {
+        select: {
+          file_url: true,
+        },
+      },
+    },
   });
-  if (!post || post.deleted_at) throw httpError(404, "Post not found");
 
-  ensureOwnerOrModerator({
+  if (!post || post.deleted_at) {
+    throw httpError(404, "Новость не найдена");
+  }
+
+  ensurePostOwner({
     actorUserId: Number(actorUserId),
-    actorRoleId: Number(actorRoleId),
     ownerUserId: post.author_user_id,
   });
 
-  // soft delete
-  await prisma.posts.update({
-    where: { post_id: Number(postId) },
-    data: { deleted_at: new Date(), updated_at: new Date() },
+  const oldFileUrls = replaceAttachments
+    ? post.attachments.map((attachment) => attachment.file_url)
+    : [];
+
+  const normalizedTitle =
+    title === undefined ? undefined : title?.trim() || null;
+
+  const normalizedContent =
+    content === undefined ? undefined : content?.trim() || null;
+
+  const isCommunity = Boolean(isCommunityPost);
+
+  if (isCommunity) {
+    await ensureCommunityPostAvailable({
+      communityId,
+      userId: actorUserId,
+    });
+  }
+
+  const updatedPost = await prisma.$transaction(async (tx) => {
+    if (replaceAttachments) {
+      await tx.attachments.deleteMany({
+        where: {
+          post_id: Number(postId),
+        },
+      });
+    }
+
+    return tx.posts.update({
+      where: {
+        post_id: Number(postId),
+      },
+      data: {
+        title: normalizedTitle,
+        content: normalizedContent,
+        community_id: isCommunity ? Number(communityId) : null,
+        is_community_post: isCommunity,
+        updated_at: new Date(),
+
+        attachments:
+          replaceAttachments && attachments.length > 0
+            ? {
+                create: attachments.map((attachment) => ({
+                  file_url: attachment.file_url,
+                })),
+              }
+            : undefined,
+      },
+      include: postInclude,
+    });
   });
 
-  return { ok: true };
+  await deleteFilesByUrls(oldFileUrls);
+
+  return normalizePost(updatedPost, actorUserId, currentUserRoleName);
 };
 
-exports.pinPost = async ({ postId, actorUserId, actorRoleId }) => {
-  if (!canPinPosts(Number(actorRoleId))) throw httpError(403, "Forbidden");
+exports.deletePost = async ({
+  postId,
+  actorUserId,
+  actorRoleName,
+}) => {
+  const post = await prisma.posts.findUnique({
+    where: {
+      post_id: Number(postId),
+    },
+    select: {
+      post_id: true,
+      author_user_id: true,
+      deleted_at: true,
+      attachments: {
+        select: {
+          file_url: true,
+        },
+      },
+    },
+  });
+
+  if (!post || post.deleted_at) {
+    throw httpError(404, "Новость не найдена");
+  }
+
+  ensureCanDeletePost({
+    actorUserId: Number(actorUserId),
+    actorRoleName,
+    ownerUserId: post.author_user_id,
+  });
+
+  const fileUrls = post.attachments.map((attachment) => attachment.file_url);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.attachments.deleteMany({
+      where: {
+        post_id: Number(postId),
+      },
+    });
+
+    await tx.posts.update({
+      where: {
+        post_id: Number(postId),
+      },
+      data: {
+        deleted_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+  });
+
+  await deleteFilesByUrls(fileUrls);
+
+  return {
+    ok: true,
+    message: "Новость удалена",
+  };
+};
+
+exports.pinPost = async ({
+  postId,
+  actorUserId,
+  actorRoleName,
+}) => {
+  if (!canPinPosts(actorRoleName)) {
+    throw httpError(403, "Недостаточно прав для закрепления новости");
+  }
 
   const post = await prisma.posts.findUnique({
-    where: { post_id: Number(postId) },
-    select: { post_id: true, deleted_at: true },
-  });
-  if (!post || post.deleted_at) throw httpError(404, "Post not found");
-
-  // Деактивируем старые активные pin
-  await prisma.post_pins.updateMany({
-    where: { post_id: Number(postId), is_active: true },
-    data: { is_active: false },
-  });
-
-  const pin = await prisma.post_pins.create({
-    data: {
+    where: {
       post_id: Number(postId),
-      pinned_by_user_id: Number(actorUserId),
-      is_active: true,
     },
+    select: {
+      post_id: true,
+      deleted_at: true,
+    },
+  });
+
+  if (!post || post.deleted_at) {
+    throw httpError(404, "Новость не найдена");
+  }
+
+  const pinnedAt = new Date();
+  const pinnedUntil = new Date(pinnedAt.getTime() + DAY_IN_MS);
+
+  const pin = await prisma.$transaction(async (tx) => {
+    await tx.post_pins.updateMany({
+      where: {
+        post_id: Number(postId),
+        is_active: true,
+      },
+      data: {
+        is_active: false,
+      },
+    });
+
+    return tx.post_pins.create({
+      data: {
+        post_id: Number(postId),
+        pinned_by_user_id: Number(actorUserId),
+        pinned_at: pinnedAt,
+        pinned_until: pinnedUntil,
+        is_active: true,
+      },
+      select: {
+        pin_id: true,
+        post_id: true,
+        pinned_by_user_id: true,
+        pinned_at: true,
+        pinned_until: true,
+        is_active: true,
+      },
+    });
   });
 
   return pin;
 };
 
-exports.unpinPost = async ({ postId, actorRoleId }) => {
-  if (!canPinPosts(Number(actorRoleId))) throw httpError(403, "Forbidden");
-
-  await prisma.post_pins.updateMany({
-    where: { post_id: Number(postId), is_active: true },
-    data: { is_active: false },
-  });
-
-  return { ok: true };
-};
-
-exports.getFeed = async ({ communityId, authorId, pinnedOnly, take = 20, skip = 0 }) => {
-  take = Math.min(Math.max(Number(take) || 20, 1), 50);
-  skip = Math.max(Number(skip) || 0, 0);
-
-  const where = {
-    deleted_at: null,
-    ...(communityId ? { community_id: Number(communityId) } : {}),
-    ...(authorId ? { author_user_id: Number(authorId) } : {}),
-  };
-
-  // только закрепленные
-  if (pinnedOnly === "true") {
-    return prisma.posts.findMany({
-      where: { ...where, post_pins: { some: { is_active: true } } },
-      include: postInclude,
-      orderBy: [{ published_at: "desc" }],
-      take,
-      skip,
-    });
+exports.unpinPost = async ({
+  postId,
+  actorRoleName,
+}) => {
+  if (!canPinPosts(actorRoleName)) {
+    throw httpError(403, "Недостаточно прав для открепления новости");
   }
 
-  // закрепленные сверху
-  const pinned = await prisma.posts.findMany({
-    where: { ...where, post_pins: { some: { is_active: true } } },
+  await prisma.post_pins.updateMany({
+    where: {
+      post_id: Number(postId),
+      is_active: true,
+    },
+    data: {
+      is_active: false,
+    },
+  });
+
+  return {
+    ok: true,
+    message: "Новость откреплена",
+  };
+};
+
+exports.getFeed = async ({
+  currentUserId,
+  currentUserRoleName,
+  communityId,
+  authorId,
+  pinnedOnly,
+  take = 20,
+  skip = 0,
+}) => {
+  const limit = Math.min(Math.max(Number(take) || 20, 1), 50);
+  const offset = Math.max(Number(skip) || 0, 0);
+  const now = new Date();
+
+  const where = {
+  deleted_at: null,
+
+  OR: [
+    {
+      community_id: null,
+    },
+    {
+      communities: {
+        deleted_at: null,
+      },
+    },
+  ],
+
+  ...(communityId
+    ? {
+        community_id: Number(communityId),
+      }
+    : {}),
+
+  ...(authorId
+    ? {
+        author_user_id: Number(authorId),
+      }
+    : {}),
+  };
+
+  const activePinWhere = {
+    is_active: true,
+    OR: [
+      {
+        pinned_until: null,
+      },
+      {
+        pinned_until: {
+          gt: now,
+        },
+      },
+    ],
+  };
+
+  if (pinnedOnly === "true") {
+    const pinnedPosts = await prisma.posts.findMany({
+      where: {
+        ...where,
+        post_pins: {
+          some: activePinWhere,
+        },
+      },
+      include: postInclude,
+      orderBy: [
+        {
+          published_at: "desc",
+        },
+      ],
+      take: limit,
+      skip: offset,
+    });
+
+    return normalizePosts(
+      pinnedPosts,
+      currentUserId,
+      currentUserRoleName
+    );
+  }
+
+  const pinnedPosts = await prisma.posts.findMany({
+    where: {
+      ...where,
+      post_pins: {
+        some: activePinWhere,
+      },
+    },
     include: postInclude,
-    orderBy: [{ published_at: "desc" }],
+    orderBy: [
+      {
+        published_at: "desc",
+      },
+    ],
     take: 10,
   });
 
-  const pinnedIds = pinned.map((p) => p.post_id);
+  const pinnedPostIds = pinnedPosts.map((post) => post.post_id);
 
-  const others = await prisma.posts.findMany({
+  const regularPosts = await prisma.posts.findMany({
     where: {
       ...where,
-      ...(pinnedIds.length ? { post_id: { notIn: pinnedIds } } : {}),
+      ...(pinnedPostIds.length
+        ? {
+            post_id: {
+              notIn: pinnedPostIds,
+            },
+          }
+        : {}),
     },
     include: postInclude,
-    orderBy: [{ published_at: "desc" }],
-    take,
-    skip,
+    orderBy: [
+      {
+        published_at: "desc",
+      },
+    ],
+    take: limit,
+    skip: offset,
   });
 
-  return [...pinned, ...others];
+  return normalizePosts(
+    [...pinnedPosts, ...regularPosts],
+    currentUserId,
+    currentUserRoleName
+  );
 };
 
-exports.getMyCommunitiesFeed = async ({ userId, take = 20, skip = 0 }) => {
-  take = Math.min(Math.max(Number(take) || 20, 1), 50);
-  skip = Math.max(Number(skip) || 0, 0);
+exports.getMyCommunitiesFeed = async ({
+  currentUserId,
+  currentUserRoleName,
+  take = 20,
+  skip = 0,
+  pinnedOnly,
+}) => {
+  const limit = Math.min(Math.max(Number(take) || 20, 1), 50);
+  const offset = Math.max(Number(skip) || 0, 0);
+  const now = new Date();
 
-  const subs = await prisma.community_subscriptions.findMany({
-    where: { user_id: Number(userId), is_active: true },
-    select: { community_id: true },
-  });
-
-  const communityIds = subs.map((s) => s.community_id);
-  if (communityIds.length === 0) return [];
-
-  return prisma.posts.findMany({
+  const subscriptions = await prisma.community_subscriptions.findMany({
     where: {
-      deleted_at: null,
-      community_id: { in: communityIds },
+      user_id: Number(currentUserId),
+      is_active: true,
     },
-    include: postInclude,
-    orderBy: [{ published_at: "desc" }],
-    take,
-    skip,
+    select: {
+      community_id: true,
+    },
   });
+
+  const communityIds = subscriptions.map((item) => item.community_id);
+
+  if (communityIds.length === 0) {
+    return [];
+  }
+
+  const activePinWhere = {
+    is_active: true,
+    OR: [
+      {
+        pinned_until: null,
+      },
+      {
+        pinned_until: {
+          gt: now,
+        },
+      },
+    ],
+  };
+
+  const where = {
+    deleted_at: null,
+    community_id: {
+      in: communityIds,
+    },
+  };
+
+  if (pinnedOnly === "true") {
+    const posts = await prisma.posts.findMany({
+      where: {
+        ...where,
+        post_pins: {
+          some: activePinWhere,
+        },
+      },
+      include: postInclude,
+      orderBy: [
+        {
+          published_at: "desc",
+        },
+      ],
+      take: limit,
+      skip: offset,
+    });
+
+    return normalizePosts(posts, currentUserId, currentUserRoleName);
+  }
+
+  const posts = await prisma.posts.findMany({
+    where,
+    include: postInclude,
+    orderBy: [
+      {
+        published_at: "desc",
+      },
+    ],
+    take: limit,
+    skip: offset,
+  });
+
+  return normalizePosts(posts, currentUserId, currentUserRoleName);
 };

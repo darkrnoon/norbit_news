@@ -1,22 +1,50 @@
 const communitiesService = require("../services/communities.service");
 const httpError = require("../utils/httpError");
+const { cleanupUploadedFiles } = require("../utils/file.utils");
+
+function parsePositiveId(value, errorMessage) {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    throw httpError(400, errorMessage);
+  }
+
+  return id;
+}
+
+function getCommunityAvatarUrl(file) {
+  if (!file) return undefined;
+  return `/uploads/communities/${file.filename}`;
+}
+
+async function cleanupUploadedAvatar(file) {
+  if (file) {
+    await cleanupUploadedFiles([file]);
+  }
+}
 
 exports.create = async (req, res, next) => {
   try {
-    const { name, description, photo_url, community_category_id } = req.body ?? {};
-    if (!name) throw httpError(400, "name is required");
-    if (!community_category_id) throw httpError(400, "community_category_id is required");
+    const { name, description } = req.body ?? {};
+
+    const categoryId = parsePositiveId(
+      req.body?.community_category_id,
+      "Выберите категорию сообщества"
+    );
+
+    const photoUrl = getCommunityAvatarUrl(req.file) ?? null;
 
     const community = await communitiesService.create({
       creatorUserId: req.user.userId,
       name,
       description: description ?? null,
-      photoUrl: photo_url ?? null,
-      categoryId: Number(community_category_id),
+      photoUrl,
+      categoryId,
     });
 
     res.status(201).json(community);
   } catch (e) {
+    await cleanupUploadedAvatar(req.file);
     next(e);
   }
 };
@@ -39,6 +67,7 @@ exports.list = async (req, res, next) => {
       take: req.query.take,
       skip: req.query.skip,
     });
+
     res.json(data);
   } catch (e) {
     next(e);
@@ -47,10 +76,16 @@ exports.list = async (req, res, next) => {
 
 exports.getById = async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) throw httpError(400, "Invalid community id");
+    const communityId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор сообщества"
+    );
 
-    const data = await communitiesService.getById({ communityId: id, userId: req.user.userId });
+    const data = await communitiesService.getById({
+      communityId,
+      userId: req.user.userId,
+    });
+
     res.json(data);
   } catch (e) {
     next(e);
@@ -59,46 +94,63 @@ exports.getById = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) throw httpError(400, "Invalid community id");
+    const communityId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор сообщества"
+    );
 
-    const { name, description, photo_url, community_category_id } = req.body ?? {};
+    const { name, description } = req.body ?? {};
+
+    const hasCategory = req.body?.community_category_id !== undefined;
+    const hasAvatar = Boolean(req.file);
+
     if (
       name === undefined &&
       description === undefined &&
-      photo_url === undefined &&
-      community_category_id === undefined
+      !hasCategory &&
+      !hasAvatar
     ) {
-      throw httpError(400, "Nothing to update");
+      throw httpError(400, "Нет данных для обновления");
     }
 
+    const categoryId = hasCategory
+      ? parsePositiveId(
+          req.body.community_category_id,
+          "Некорректная категория сообщества"
+        )
+      : undefined;
+
+    const photoUrl = getCommunityAvatarUrl(req.file);
+
     const updated = await communitiesService.update({
-      communityId: id,
+      communityId,
       actorUserId: req.user.userId,
-      actorRoleId: req.user.roleId,
       patch: {
         name,
         description,
-        photo_url,
-        community_category_id,
+        photoUrl,
+        categoryId,
       },
     });
 
     res.json(updated);
   } catch (e) {
+    await cleanupUploadedAvatar(req.file);
     next(e);
   }
 };
 
 exports.remove = async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) throw httpError(400, "Invalid community id");
+    const communityId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор сообщества"
+    );
 
     const result = await communitiesService.remove({
-      communityId: id,
+      communityId,
       actorUserId: req.user.userId,
-      actorRoleId: req.user.roleId,
+      actorRoleName: req.user.roleName,
     });
 
     res.json(result);
@@ -109,11 +161,13 @@ exports.remove = async (req, res, next) => {
 
 exports.subscribe = async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) throw httpError(400, "Invalid community id");
+    const communityId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор сообщества"
+    );
 
     const result = await communitiesService.subscribe({
-      communityId: id,
+      communityId,
       userId: req.user.userId,
     });
 
@@ -125,11 +179,13 @@ exports.subscribe = async (req, res, next) => {
 
 exports.unsubscribe = async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) throw httpError(400, "Invalid community id");
+    const communityId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор сообщества"
+    );
 
     const result = await communitiesService.unsubscribe({
-      communityId: id,
+      communityId,
       userId: req.user.userId,
     });
 
@@ -150,11 +206,15 @@ exports.mySubscriptions = async (req, res, next) => {
 
 exports.posts = async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) throw httpError(400, "Invalid community id");
+    const communityId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор сообщества"
+    );
 
     const data = await communitiesService.posts({
-      communityId: id,
+      communityId,
+      currentUserId: req.user.userId,
+      currentUserRoleName: req.user.roleName,
       take: req.query.take,
       skip: req.query.skip,
     });

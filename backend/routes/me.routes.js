@@ -5,6 +5,6 @@ const meController = require("../controllers/me.controller");
 const router = express.Router();
 
 router.get("/", auth, meController.me);
-router.patch("/contact", auth, meController.updateContact);
+router.get("/feed-filter-users", auth, meController.getFeedFilterUsers);
 
 module.exports = router;

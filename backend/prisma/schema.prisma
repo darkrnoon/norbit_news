@@ -8,21 +8,11 @@ datasource db {
 }
 
 model attachments {
-  attachment_id       Int            @id @default(autoincrement())
-  file_name           String?        @db.VarChar(255)
-  file_url            String?        @db.VarChar(255)
-  mime_type           String?        @db.VarChar(255)
-  file_size           Int?
-  uploaded_by_user_id Int
-  uploaded_at         DateTime       @default(now()) @db.Timestamptz(6)
-  post_id             Int?
-  help_request_id     Int?
-  help_requests       help_requests? @relation(fields: [help_request_id], references: [help_request_id], onDelete: Cascade, map: "fk_attachments_help_request")
-  posts               posts?         @relation(fields: [post_id], references: [post_id], onDelete: Cascade, map: "fk_attachments_post")
-  users               users          @relation(fields: [uploaded_by_user_id], references: [user_id], map: "fk_attachments_uploader")
-
-  @@index([help_request_id], map: "ix_attachments_help_req")
-  @@index([post_id], map: "ix_attachments_post")
+  attachment_id Int       @id @default(autoincrement())
+  file_url      String    @db.VarChar(255)
+  uploaded_at   DateTime? @default(now()) @db.Timestamptz(6)
+  post_id       Int
+  posts         posts     @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attachments_post")
 }
 
 model bead_transactions {
@@ -31,43 +21,34 @@ model bead_transactions {
   to_contact_id                                        Int?
   amount                                               Int
   reason                                               String?   @db.VarChar(100)
-  created_at                                           DateTime  @default(now()) @db.Timestamptz(6)
-  contacts_bead_transactions_from_contact_idTocontacts contacts? @relation("bead_transactions_from_contact_idTocontacts", fields: [from_contact_id], references: [contact_id], map: "fk_beads_from_contact")
-  contacts_bead_transactions_to_contact_idTocontacts   contacts? @relation("bead_transactions_to_contact_idTocontacts", fields: [to_contact_id], references: [contact_id], map: "fk_beads_to_contact")
-
-  @@index([from_contact_id, created_at(sort: Desc)], map: "ix_beads_from_contact")
-  @@index([to_contact_id, created_at(sort: Desc)], map: "ix_beads_to_contact")
+  created_at                                           DateTime? @default(now()) @db.Timestamptz(6)
+  contacts_bead_transactions_from_contact_idTocontacts contacts? @relation("bead_transactions_from_contact_idTocontacts", fields: [from_contact_id], references: [contact_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_beads_from_contact")
+  contacts_bead_transactions_to_contact_idTocontacts   contacts? @relation("bead_transactions_to_contact_idTocontacts", fields: [to_contact_id], references: [contact_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_beads_to_contact")
 }
 
 model communities {
   community_id            Int                       @id @default(autoincrement())
-  name                    String?                   @db.VarChar(255)
-  description             String?                   @db.VarChar(255)
+  name                    String                    @db.VarChar(255)
+  description             String?
   photo_url               String?                   @db.VarChar(255)
   community_category_id   Int
   creator_user_id         Int
-  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  created_at              DateTime?                 @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime?                 @default(now()) @db.Timestamptz(6)
   deleted_at              DateTime?                 @db.Timestamptz(6)
-  updated_at              DateTime                  @default(now()) @db.Timestamptz(6)
-  community_categoties    community_categoties      @relation(fields: [community_category_id], references: [community_category_id], map: "fk_communities_category")
-  users                   users                     @relation(fields: [creator_user_id], references: [user_id], map: "fk_communities_creator")
+  community_categoties    community_categories      @relation(fields: [community_category_id], references: [community_category_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_communities_category")
+  users                   users                     @relation(fields: [creator_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_communities_creator")
   community_subscriptions community_subscriptions[]
   posts                   posts[]
-}
-
-model community_categoties {
-  community_category_id Int           @id @default(autoincrement())
-  name                  String        @db.VarChar(100)
-  communities           communities[]
 }
 
 model community_subscriptions {
   community_id  Int
   user_id       Int
-  subscribed_at DateTime    @default(now()) @db.Timestamptz(6)
-  is_active     Boolean     @default(true)
-  communities   communities @relation(fields: [community_id], references: [community_id], onDelete: Cascade, map: "fk_subscriptions_community")
-  users         users       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_subscriptions_user")
+  subscribed_at DateTime?   @default(now()) @db.Timestamptz(6)
+  is_active     Boolean?    @default(true)
+  communities   communities @relation(fields: [community_id], references: [community_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_subscriptions_community")
+  users         users       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_subscriptions_user")
 
   @@id([community_id, user_id])
 }
@@ -76,92 +57,67 @@ model contacts {
   contact_id                                                    Int                 @id
   avatar                                                        String?             @db.VarChar(255)
   full_name                                                     String              @db.VarChar(255)
-  position                                                      String?             @db.VarChar(255)
-  department                                                    String?             @db.VarChar(255)
-  branch                                                        String?             @db.VarChar(255)
-  office_room                                                   String?             @db.VarChar(50)
-  city                                                          String?             @db.VarChar(100)
-  address                                                       String?             @db.VarChar(255)
-  gender                                                        String?             @db.VarChar(20)
-  birth_date                                                    DateTime?           @db.Date
-  hire_date                                                     DateTime?           @db.Date
   email                                                         String?             @db.VarChar(255)
-  phone                                                         String?             @db.VarChar(30)
   telegram_url                                                  String?             @db.VarChar(255)
   beads_balance                                                 Int?                @default(0)
   bead_transactions_bead_transactions_from_contact_idTocontacts bead_transactions[] @relation("bead_transactions_from_contact_idTocontacts")
   bead_transactions_bead_transactions_to_contact_idTocontacts   bead_transactions[] @relation("bead_transactions_to_contact_idTocontacts")
-  users                                                         users               @relation(fields: [contact_id], references: [user_id], onDelete: Cascade, map: "fk_contacts_user")
-}
-
-model help_request_categories {
-  help_category_id Int             @id @default(autoincrement())
-  name             String          @db.VarChar(100)
-  help_requests    help_requests[]
+  users                                                         users               @relation(fields: [contact_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_contacts_user")
 }
 
 model help_requests {
-  help_request_id         Int                     @id @default(autoincrement())
-  creator_user_id         Int
-  title                   String?                 @db.VarChar(255)
-  description             String?                 @db.VarChar(255)
-  reward_beads            Int                     @default(0)
-  help_category_id        Int
-  status                  String                  @db.VarChar(20)
-  created_at              DateTime                @default(now()) @db.Timestamptz(6)
-  updated_at              DateTime                @default(now()) @db.Timestamptz(6)
-  closed_at               DateTime?               @db.Timestamptz(6)
-  deleted_at              DateTime?               @db.Timestamptz(6)
-  attachments             attachments[]
-  help_request_categories help_request_categories @relation(fields: [help_category_id], references: [help_category_id], map: "fk_help_requests_category")
-  users                   users                   @relation(fields: [creator_user_id], references: [user_id], map: "fk_help_requests_creator")
-  help_responses          help_responses[]
-
-  @@index([status], map: "ix_help_requests_status")
+  help_request_id Int              @id @default(autoincrement())
+  creator_user_id Int
+  title           String?          @db.VarChar(255)
+  description     String?
+  reward_beads    Int?             @default(0)
+  contact_url     String?          @db.VarChar(255)
+  status          String           @db.VarChar(20)
+  created_at      DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?        @default(now()) @db.Timestamptz(6)
+  closed_at       DateTime?        @db.Timestamptz(6)
+  deleted_at      DateTime?        @db.Timestamptz(6)
+  users           users            @relation(fields: [creator_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_help_requests_creator")
+  help_responses  help_responses[]
 }
 
 model help_responses {
   help_response_id Int           @id @default(autoincrement())
   help_request_id  Int
   helper_user_id   Int
-  message          String?       @db.VarChar(255)
   status           String        @db.VarChar(20)
-  created_at       DateTime      @default(now()) @db.Timestamptz(6)
-  users            users         @relation(fields: [helper_user_id], references: [user_id], map: "fk_help_responses_helper")
-  help_requests    help_requests @relation(fields: [help_request_id], references: [help_request_id], onDelete: Cascade, map: "fk_help_responses_request")
-
-  @@index([help_request_id], map: "ix_help_responses_req")
+  created_at       DateTime?     @default(now()) @db.Timestamptz(6)
+  help_requests    help_requests @relation(fields: [help_request_id], references: [help_request_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_help_responses_request")
+  users            users         @relation(fields: [helper_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_help_responses_helper")
 }
 
 model post_pins {
   pin_id            Int       @id @default(autoincrement())
   post_id           Int
   pinned_by_user_id Int
-  pinned_at         DateTime  @default(now()) @db.Timestamptz(6)
+  pinned_at         DateTime? @default(now()) @db.Timestamptz(6)
   pinned_until      DateTime? @db.Timestamptz(6)
-  is_active         Boolean   @default(true)
-  posts             posts     @relation(fields: [post_id], references: [post_id], onDelete: Cascade, map: "fk_pins_post")
-  users             users     @relation(fields: [pinned_by_user_id], references: [user_id], map: "fk_pins_user")
+  is_active         Boolean?  @default(true)
+  users             users     @relation(fields: [pinned_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pins_user")
+  posts             posts     @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pins_post")
 }
 
 model posts {
-  post_id           Int           @id @default(autoincrement())
+  post_id           Int             @id @default(autoincrement())
   author_user_id    Int
-  title             String?       @db.VarChar(255)
-  content           String?       @db.VarChar(255)
+  title             String?         @db.VarChar(255)
+  content           String?
   community_id      Int?
-  is_community_post Boolean       @default(false)
-  published_at      DateTime      @default(now()) @db.Timestamptz(6)
-  deleted_at        DateTime?     @db.Timestamptz(6)
-  updated_at        DateTime      @default(now()) @db.Timestamptz(6)
+  is_community_post Boolean?        @default(false)
+  published_at      DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?       @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?       @db.Timestamptz(6)
   attachments       attachments[]
+  post_comments     post_comments[]
+  post_likes        post_likes[]
   post_pins         post_pins[]
-  users             users         @relation(fields: [author_user_id], references: [user_id], map: "fk_posts_author")
-  communities       communities?  @relation(fields: [community_id], references: [community_id], map: "fk_posts_community")
-
-  @@index([author_user_id], map: "ix_posts_author")
-  @@index([community_id], map: "ix_posts_community")
-  @@index([published_at(sort: Desc)], map: "ix_posts_published_at")
+  users             users           @relation(fields: [author_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_posts_author")
+  communities       communities?    @relation(fields: [community_id], references: [community_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_posts_community")
 }
 
 model roles {
@@ -175,15 +131,43 @@ model users {
   login                   String                    @unique @db.VarChar(100)
   password_hash           String                    @db.VarChar(255)
   role_id                 Int
-  is_active               Boolean                   @default(true)
-  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
-  attachments             attachments[]
+  is_active               Boolean?                  @default(true)
+  created_at              DateTime?                 @default(now()) @db.Timestamptz(6)
   communities             communities[]
   community_subscriptions community_subscriptions[]
   contacts                contacts?
   help_requests           help_requests[]
   help_responses          help_responses[]
+  post_comments           post_comments[]
+  post_likes              post_likes[]
   post_pins               post_pins[]
   posts                   posts[]
-  roles                   roles                     @relation(fields: [role_id], references: [role_id], map: "fk_users_role")
+  roles                   roles                     @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_role")
+}
+
+model community_categories {
+  community_category_id Int           @id @default(autoincrement())
+  name                  String        @db.VarChar(100)
+  communities           communities[]
+}
+
+model post_comments {
+  comment_id Int       @id @default(autoincrement())
+  post_id    Int
+  user_id    Int
+  content    String
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  posts      posts     @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model post_likes {
+  post_id    Int
+  user_id    Int
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  posts      posts     @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([post_id, user_id])
 }

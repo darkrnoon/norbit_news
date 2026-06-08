@@ -1,5 +1,12 @@
-// services/permission.service.js
-const { MODERATOR_ROLE_IDS, PIN_ROLE_IDS } = require("../utils/roles");
+const {
+  MODERATOR_ROLE_NAMES,
+  PIN_ROLE_NAMES,
+} = require("../utils/roles");
 
-exports.canModerate = (roleId) => MODERATOR_ROLE_IDS.includes(roleId);
-exports.canPinPosts = (roleId) => PIN_ROLE_IDS.includes(roleId);
+exports.canModerate = (roleName) => {
+  return MODERATOR_ROLE_NAMES.includes(roleName);
+};
+
+exports.canPinPosts = (roleName) => {
+  return PIN_ROLE_NAMES.includes(roleName);
+};
