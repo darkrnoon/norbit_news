@@ -1,0 +1,30 @@
+const HELP_REQUEST_STATUS = {
+  OPEN: "open",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+};
+
+const HELP_RESPONSE_STATUS = {
+  ACTIVE: "active",
+  SUCCESSFUL: "successful",
+  CANCELLED: "cancelled",
+};
+
+const HELP_REQUEST_STATUS_LABELS = {
+  [HELP_REQUEST_STATUS.OPEN]: "Открыт",
+  [HELP_REQUEST_STATUS.IN_PROGRESS]: "Выполняется",
+  [HELP_REQUEST_STATUS.COMPLETED]: "Завершен",
+};
+
+const HELP_RESPONSE_STATUS_LABELS = {
+  [HELP_RESPONSE_STATUS.ACTIVE]: "Выполняется",
+  [HELP_RESPONSE_STATUS.SUCCESSFUL]: "Выполнено",
+  [HELP_RESPONSE_STATUS.CANCELLED]: "Отменен",
+};
+
+module.exports = {
+  HELP_REQUEST_STATUS,
+  HELP_RESPONSE_STATUS,
+  HELP_REQUEST_STATUS_LABELS,
+  HELP_RESPONSE_STATUS_LABELS,
+};

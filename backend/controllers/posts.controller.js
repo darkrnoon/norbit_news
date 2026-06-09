@@ -2,22 +2,37 @@ const postsService = require("../services/posts.service");
 const httpError = require("../utils/httpError");
 const { cleanupUploadedFiles } = require("../utils/file.utils");
 
-function parseBoolean(value) {
-  return value === true || value === "true" || value === "1";
+function parseOptionalBoolean(value) {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  if (value === true || value === "true" || value === "1") {
+    return true;
+  }
+
+  if (value === false || value === "false" || value === "0") {
+    return false;
+  }
+
+  throw httpError(
+    400,
+    "Некорректное значение признака публикации от сообщества"
+  );
 }
 
-function parseOptionalNumber(value) {
+function parseOptionalPositiveId(value, message) {
   if (value === undefined || value === null || value === "") {
     return null;
   }
 
-  const number = Number(value);
+  const id = Number(value);
 
-  if (!Number.isInteger(number) || number <= 0) {
-    return null;
+  if (!Number.isInteger(id) || id <= 0) {
+    throw httpError(400, message);
   }
 
-  return number;
+  return id;
 }
 
 function getUploadedAttachments(files = []) {
@@ -30,8 +45,8 @@ exports.create = async (req, res, next) => {
   try {
     const { title, content } = req.body ?? {};
 
-    const communityId = parseOptionalNumber(req.body?.community_id);
-    const isCommunityPost = parseBoolean(req.body?.is_community_post);
+    const communityId = parseOptionalPositiveId(req.body?.community_id, "Некорректный идентификатор сообщества");
+    const isCommunityPost = parseOptionalBoolean(req.body?.is_community_post) ?? false;
     const attachments = getUploadedAttachments(req.files);
 
     const post = await postsService.createPost({
@@ -115,8 +130,8 @@ exports.update = async (req, res, next) => {
 
     const { title, content } = req.body ?? {};
 
-    const communityId = parseOptionalNumber(req.body?.community_id);
-    const isCommunityPost = parseBoolean(req.body?.is_community_post);
+    const communityId = parseOptionalPositiveId(req.body?.community_id, "Некорректный идентификатор сообщества");
+    const isCommunityPost = parseOptionalBoolean(req.body?.is_community_post);
     const attachments = getUploadedAttachments(req.files);
 
     const post = await postsService.updatePost({
