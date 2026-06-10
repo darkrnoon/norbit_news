@@ -8,11 +8,14 @@ datasource db {
 }
 
 model attachments {
-  attachment_id Int       @id @default(autoincrement())
-  file_url      String    @db.VarChar(255)
-  uploaded_at   DateTime? @default(now()) @db.Timestamptz(6)
+  attachment_id Int      @id @default(autoincrement())
+  file_url      String   @db.VarChar(255)
+  uploaded_at   DateTime @default(now()) @db.Timestamptz(6)
   post_id       Int
-  posts         posts     @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attachments_post")
+  original_name String?  @db.VarChar(255)
+  mime_type     String?  @db.VarChar(255)
+  file_size     Int?
+  posts         posts    @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attachments_post")
 }
 
 model bead_transactions {

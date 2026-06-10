@@ -1,0 +1,237 @@
+.community-details-page {
+  width: 1120px;
+  max-width: 100%;
+}
+
+.community-details-page__top {
+  margin-bottom: 28px;
+}
+
+.community-details-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.community-details-page__back:hover {
+  text-decoration: underline;
+}
+
+.community-details-page__back img {
+  width: 16px;
+  height: 16px;
+}
+
+.community-details-state,
+.community-details-error {
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+}
+
+.community-details-state {
+  color: #777777;
+}
+
+.community-details-error {
+  color: #ff0000;
+}
+
+.community-details-card {
+  min-height: 168px;
+  padding: 26px 28px;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+}
+
+.community-details-card__avatar {
+  width: 92px;
+  height: 92px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 500;
+  background: #073764;
+  border: 4px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+.community-details-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.community-details-card__content {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.community-details-card__title {
+  margin: 0;
+  color: #111111;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.community-details-card__description {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: #777777;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.community-details-card__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 28px;
+  color: #777777;
+  font-size: 15px;
+}
+
+.community-details-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.community-details-card__meta-item img {
+  width: 17px;
+  height: 17px;
+}
+
+.community-details-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.community-details-card__subscribe {
+  min-width: 115px;
+  height: 36px;
+  padding: 0 14px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
+  background: #073764;
+  border: 1px solid #073764;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.community-details-card__subscribe:hover:not(:disabled) {
+  background: #062f55;
+}
+
+.community-details-card__subscribe.is-subscribed {
+  color: #111111;
+  background: #ffffff;
+  border-color: #d0d0d0;
+}
+
+.community-details-card__subscribe.is-subscribed:hover:not(:disabled) {
+  background: #f7f7f7;
+}
+
+.community-details-card__subscribe:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.community-details-card__menu {
+  position: relative;
+}
+
+.community-details-card__menu-button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.community-details-card__menu-button:hover {
+  background: #f1f1f1;
+}
+
+.community-details-card__menu-button img {
+  width: 18px;
+  height: 18px;
+}
+
+.community-details-card__menu-list {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  z-index: 20;
+  min-width: 160px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 7px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.community-details-card__menu-list button {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  color: #111111;
+  font-size: 14px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.community-details-card__menu-list button:hover {
+  background: #f5f5f5;
+}
+
+.community-details-card__menu-list .community-details-card__menu-danger {
+  color: #ff0000;
+}
+
+.community-details-posts {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+@media (max-width: 900px) {
+  .community-details-card {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .community-details-card__avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+  }
+
+  .community-details-card__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}

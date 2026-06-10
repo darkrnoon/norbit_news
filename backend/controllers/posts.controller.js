@@ -21,6 +21,18 @@ function parseOptionalBoolean(value) {
   );
 }
 
+function normalizeOriginalName(originalName = "Файл") {
+  if (!originalName) return "Файл";
+
+  const hasMojibake = /[ÐÑ]/.test(originalName);
+
+  if (!hasMojibake) {
+    return originalName;
+  }
+
+  return Buffer.from(originalName, "latin1").toString("utf8");
+}
+
 function parseOptionalPositiveId(value, message) {
   if (value === undefined || value === null || value === "") {
     return null;
@@ -35,18 +47,57 @@ function parseOptionalPositiveId(value, message) {
   return id;
 }
 
+function parsePositiveId(value, message) {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    throw httpError(400, message);
+  }
+
+  return id;
+}
+
 function getUploadedAttachments(files = []) {
   return files.map((file) => ({
     file_url: `/uploads/posts/${file.filename}`,
+    original_name: normalizeOriginalName(file.originalname),
+    mime_type: file.mimetype,
+    file_size: file.size,
   }));
+}
+
+function parseKeepAttachmentIds(value) {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (!Array.isArray(parsed)) {
+      throw httpError(400, "Некорректный список сохраняемых вложений");
+    }
+
+    return parsed
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+  } catch {
+    throw httpError(400, "Некорректный список сохраняемых вложений");
+  }
 }
 
 exports.create = async (req, res, next) => {
   try {
     const { title, content } = req.body ?? {};
 
-    const communityId = parseOptionalPositiveId(req.body?.community_id, "Некорректный идентификатор сообщества");
-    const isCommunityPost = parseOptionalBoolean(req.body?.is_community_post) ?? false;
+    const communityId = parseOptionalPositiveId(
+      req.body?.community_id,
+      "Некорректный идентификатор сообщества"
+    );
+
+    const isCommunityPost =
+      parseOptionalBoolean(req.body?.is_community_post) ?? false;
+
     const attachments = getUploadedAttachments(req.files);
 
     const post = await postsService.createPost({
@@ -102,11 +153,10 @@ exports.getMyCommunitiesFeed = async (req, res, next) => {
 
 exports.getById = async (req, res, next) => {
   try {
-    const postId = Number(req.params.id);
-
-    if (!Number.isInteger(postId) || postId <= 0) {
-      throw httpError(400, "Некорректный идентификатор новости");
-    }
+    const postId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор новости"
+    );
 
     const post = await postsService.getPostById({
       postId,
@@ -122,17 +172,25 @@ exports.getById = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
   try {
-    const postId = Number(req.params.id);
-
-    if (!Number.isInteger(postId) || postId <= 0) {
-      throw httpError(400, "Некорректный идентификатор новости");
-    }
+    const postId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор новости"
+    );
 
     const { title, content } = req.body ?? {};
 
-    const communityId = parseOptionalPositiveId(req.body?.community_id, "Некорректный идентификатор сообщества");
+    const communityId = parseOptionalPositiveId(
+      req.body?.community_id,
+      "Некорректный идентификатор сообщества"
+    );
+
     const isCommunityPost = parseOptionalBoolean(req.body?.is_community_post);
+
     const attachments = getUploadedAttachments(req.files);
+
+    const keepAttachmentIds = parseKeepAttachmentIds(
+      req.body?.keep_attachment_ids
+    );
 
     const post = await postsService.updatePost({
       postId,
@@ -143,7 +201,7 @@ exports.update = async (req, res, next) => {
       communityId,
       isCommunityPost,
       attachments,
-      replaceAttachments: req.files && req.files.length > 0,
+      keepAttachmentIds,
     });
 
     res.json(post);
@@ -155,11 +213,10 @@ exports.update = async (req, res, next) => {
 
 exports.remove = async (req, res, next) => {
   try {
-    const postId = Number(req.params.id);
-
-    if (!Number.isInteger(postId) || postId <= 0) {
-      throw httpError(400, "Некорректный идентификатор новости");
-    }
+    const postId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор новости"
+    );
 
     const result = await postsService.deletePost({
       postId,
@@ -175,11 +232,10 @@ exports.remove = async (req, res, next) => {
 
 exports.pin = async (req, res, next) => {
   try {
-    const postId = Number(req.params.id);
-
-    if (!Number.isInteger(postId) || postId <= 0) {
-      throw httpError(400, "Некорректный идентификатор новости");
-    }
+    const postId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор новости"
+    );
 
     const pin = await postsService.pinPost({
       postId,
@@ -195,11 +251,10 @@ exports.pin = async (req, res, next) => {
 
 exports.unpin = async (req, res, next) => {
   try {
-    const postId = Number(req.params.id);
-
-    if (!Number.isInteger(postId) || postId <= 0) {
-      throw httpError(400, "Некорректный идентификатор новости");
-    }
+    const postId = parsePositiveId(
+      req.params.id,
+      "Некорректный идентификатор новости"
+    );
 
     const result = await postsService.unpinPost({
       postId,

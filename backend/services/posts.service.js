@@ -33,6 +33,9 @@ function getPostInclude(currentUserId, now = new Date()) {
       select: {
         attachment_id: true,
         file_url: true,
+        original_name: true,
+        mime_type: true,
+        file_size: true,
         uploaded_at: true,
       },
     },
@@ -158,6 +161,9 @@ function normalizePost(post, currentUserId, currentUserRoleName) {
     attachments: post.attachments.map((attachment) => ({
       attachment_id: attachment.attachment_id,
       file_url: attachment.file_url,
+      original_name: attachment.original_name,
+      mime_type: attachment.mime_type,
+      file_size: attachment.file_size,
       uploaded_at: attachment.uploaded_at,
       type: isImageFile(attachment.file_url) ? "image" : "file",
     })),
@@ -237,6 +243,9 @@ function prepareAttachments(attachments) {
     .filter((item) => item && typeof item.file_url === "string")
     .map((item) => ({
       file_url: item.file_url,
+      original_name: item.original_name ?? null,
+      mime_type: item.mime_type ?? null,
+      file_size: item.file_size ?? null,
     }));
 }
 
@@ -320,7 +329,7 @@ exports.updatePost = async ({
   communityId,
   isCommunityPost,
   attachments = [],
-  replaceAttachments = false,
+  keepAttachmentIds,
 }) => {
   const post = await prisma.posts.findUnique({
     where: {
@@ -341,6 +350,7 @@ exports.updatePost = async ({
       },
       attachments: {
         select: {
+          attachment_id: true,
           file_url: true,
         },
       },
@@ -358,9 +368,27 @@ exports.updatePost = async ({
 
   const preparedAttachments = prepareAttachments(attachments);
 
-  const oldFileUrls = replaceAttachments
-    ? post.attachments.map((attachment) => attachment.file_url)
-    : [];
+  const existingAttachmentIds = post.attachments.map(
+    (attachment) => attachment.attachment_id
+  );
+
+  const idsToKeep = Array.isArray(keepAttachmentIds)
+    ? keepAttachmentIds.filter((id) => existingAttachmentIds.includes(id))
+    : existingAttachmentIds;
+
+  const attachmentsToDelete = post.attachments.filter(
+    (attachment) => !idsToKeep.includes(attachment.attachment_id)
+  );
+
+  const deletedFileUrls = attachmentsToDelete.map(
+    (attachment) => attachment.file_url
+  );
+
+  const finalAttachmentsCount = idsToKeep.length + preparedAttachments.length;
+
+  if (finalAttachmentsCount > 4) {
+    throw httpError(400, "Можно прикрепить не более 4 файлов");
+  }
 
   const normalizedTitle =
     title === undefined ? undefined : title?.trim() || null;
@@ -369,6 +397,7 @@ exports.updatePost = async ({
     content === undefined ? undefined : content?.trim() || null;
 
   const shouldUpdateCommunity = isCommunityPost !== undefined;
+
   const isCommunity = shouldUpdateCommunity
     ? Boolean(isCommunityPost)
     : undefined;
@@ -386,10 +415,6 @@ exports.updatePost = async ({
   const finalContent =
     normalizedContent === undefined ? post.content : normalizedContent;
 
-  const finalAttachmentsCount = replaceAttachments
-    ? preparedAttachments.length
-    : post.attachments.length;
-
   if (!finalTitle && !finalContent && finalAttachmentsCount === 0) {
     throw httpError(
       400,
@@ -398,9 +423,14 @@ exports.updatePost = async ({
   }
 
   const updatedPost = await prisma.$transaction(async (tx) => {
-    if (replaceAttachments) {
+    if (attachmentsToDelete.length > 0) {
       await tx.attachments.deleteMany({
         where: {
+          attachment_id: {
+            in: attachmentsToDelete.map(
+              (attachment) => attachment.attachment_id
+            ),
+          },
           post_id: Number(postId),
         },
       });
@@ -427,7 +457,7 @@ exports.updatePost = async ({
         updated_at: new Date(),
 
         attachments:
-          replaceAttachments && preparedAttachments.length > 0
+          preparedAttachments.length > 0
             ? {
                 create: preparedAttachments,
               }
@@ -437,7 +467,7 @@ exports.updatePost = async ({
     });
   });
 
-  await deleteFilesByUrls(oldFileUrls);
+  await deleteFilesByUrls(deletedFileUrls);
 
   return normalizePost(updatedPost, actorUserId, currentUserRoleName);
 };

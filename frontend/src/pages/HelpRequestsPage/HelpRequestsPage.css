@@ -1,0 +1,97 @@
+.help-requests-page {
+  width: 1120px;
+  max-width: 100%;
+}
+
+.help-requests-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.help-requests-header__title {
+  margin: 0;
+  color: #111111;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.help-requests-header__subtitle {
+  margin: 9px 0 0;
+  color: #777777;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.help-requests-header__create {
+  height: 36px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  background: #073764;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.help-requests-header__create:hover {
+  background: #062f55;
+}
+
+.help-requests-header__create img {
+  width: 15px;
+  height: 15px;
+}
+
+.help-requests-tabs {
+  height: 46px;
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 3px;
+  background: #ededed;
+  border-radius: 7px;
+}
+
+.help-requests-tabs__button {
+  color: #111111;
+  font-size: 16px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.help-requests-tabs__button.is-active {
+  background: #ffffff;
+}
+
+.help-requests-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.help-requests-state,
+.help-requests-error {
+  margin-top: 24px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+}
+
+.help-requests-state {
+  color: #777777;
+}
+
+.help-requests-error {
+  color: #ff0000;
+}

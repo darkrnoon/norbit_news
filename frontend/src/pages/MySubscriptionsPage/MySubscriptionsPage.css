@@ -1,0 +1,134 @@
+.my-subscriptions-page {
+  width: 1124px;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 800px) 300px;
+  align-items: start;
+  gap: 24px;
+}
+
+.my-subscriptions-feed {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.my-subscriptions-state,
+.my-subscriptions-error {
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+}
+
+.my-subscriptions-state {
+  color: #777777;
+}
+
+.my-subscriptions-error {
+  color: #ff0000;
+}
+
+.my-subscriptions-sidebar {
+  padding: 22px 20px 24px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+}
+
+.my-subscriptions-sidebar__title {
+  margin: 0;
+  color: #111111;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.my-subscriptions-sidebar__list {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.my-subscriptions-sidebar__item {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.my-subscriptions-sidebar__item:hover .my-subscriptions-sidebar__name {
+  text-decoration: underline;
+}
+
+.my-subscriptions-sidebar__avatar {
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  color: #111111;
+  font-size: 14px;
+  font-weight: 500;
+  background: #eeeeee;
+  border-radius: 50%;
+}
+
+.my-subscriptions-sidebar__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.my-subscriptions-sidebar__name {
+  min-width: 0;
+  color: #111111;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.my-subscriptions-sidebar__empty {
+  margin-top: 18px;
+  color: #777777;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.my-subscriptions-sidebar__show-all {
+  margin-top: 20px;
+  margin-left: auto;
+  padding: 0;
+  display: block;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: underline;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.my-subscriptions-sidebar__show-all:hover {
+  color: #073764;
+}
+
+@media (max-width: 1000px) {
+  .my-subscriptions-page {
+    grid-template-columns: 1fr;
+  }
+
+  .my-subscriptions-sidebar {
+    order: -1;
+  }
+}

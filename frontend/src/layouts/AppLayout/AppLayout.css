@@ -1,0 +1,218 @@
+.app-layout {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.app-header {
+  height: 60px;
+  background: #ffffff;
+  border-bottom: 1px solid #dcdcdc;
+}
+
+.app-header__inner {
+  max-width: 1510px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-header__logo {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: #073764;
+  border-radius: 7px;
+}
+
+.app-header__logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.app-header__company {
+  color: #111111;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.app-header__create {
+  height: 34px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  background: #073764;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.app-header__create img {
+  width: 15px;
+  height: 15px;
+}
+
+.app-header__profile-wrap {
+  position: relative;
+}
+
+.app-header__profile {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.app-header__avatar {
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: #111111;
+  font-size: 14px;
+  font-weight: 500;
+  background: #eeeeee;
+  border-radius: 50%;
+}
+
+.app-header__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app-header__profile-text {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.app-header__name {
+  color: #111111;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.app-header__beads {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #666666;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.app-header__beads img {
+  width: 13px;
+  height: 13px;
+}
+
+.app-header__profile-menu {
+  position: absolute;
+  top: 43px;
+  right: 0;
+  z-index: 30;
+  width: 190px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 7px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+}
+
+.app-header__profile-menu-item {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #111111;
+  font-size: 14px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.app-header__profile-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.app-header__profile-menu-item img {
+  width: 17px;
+  height: 17px;
+}
+
+.app-layout__body {
+  max-width: 1510px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: calc(100vh - 60px);
+}
+
+.app-sidebar {
+  padding: 34px 0 0 18px;
+}
+
+.app-sidebar__nav {
+  display: grid;
+  gap: 18px;
+}
+
+.app-sidebar__link {
+  width: 180px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #777777;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.app-sidebar__link img {
+  width: 20px;
+  height: 20px;
+}
+
+.app-sidebar__link.active {
+  color: #073764;
+  font-weight: 700;
+}
+
+.app-content {
+  min-width: 0;
+  padding: 24px 0 40px;
+  display: flex;
+  justify-content: center;
+}

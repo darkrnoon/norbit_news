@@ -1,33 +1,51 @@
 import axios from "axios";
 
+export const ACCESS_TOKEN_KEY = "accessToken";
+
+export function getAccessToken() {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+export function setAccessToken(token) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+}
+
+export function clearAccessToken() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+}
+
 export const http = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = getAccessToken();
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 
 http.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    const status = err?.response?.status;
-    const url = err?.config?.url || ""; // например "/auth/login"
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const url = error?.config?.url || "";
 
-    // ✅ если это логин — 401 не трогаем, пусть LoginPage покажет ошибку
     const isLoginRequest = url.includes("/auth/login");
 
     if (status === 401 && !isLoginRequest) {
-      localStorage.removeItem("accessToken");
+      clearAccessToken();
 
-      // редиректим только если не на /login
+      window.dispatchEvent(new Event("auth:logout"));
+
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
     }
 
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 );

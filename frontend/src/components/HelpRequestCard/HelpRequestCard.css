@@ -1,0 +1,232 @@
+.help-request-card {
+  padding: 24px 24px 20px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+}
+
+.help-request-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.help-request-card__status,
+.help-request-card__reward {
+  height: 23px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 5px;
+}
+
+.help-request-card__status {
+  color: #ffffff;
+}
+
+.help-request-card__status.is-open {
+  background: #073764;
+}
+
+.help-request-card__status.is-progress {
+  background: #ff7a00;
+}
+
+.help-request-card__status.is-completed {
+  background: #d70000;
+}
+
+.help-request-card__status.is-done-by-me {
+  background: #00b050;
+}
+
+.help-request-card__reward {
+  color: #111111;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+}
+
+.help-request-card__reward img {
+  width: 14px;
+  height: 14px;
+}
+
+.help-request-card__title {
+  margin: 14px 0 0;
+  color: #111111;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.help-request-card__description {
+  margin: 12px 0 0;
+  color: #777777;
+  font-size: 16px;
+  line-height: 1.4;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.help-request-card__description.is-expanded {
+  display: block;
+  overflow: visible;
+  text-overflow: initial;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  white-space: pre-line;
+}
+
+.help-request-card__bottom {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.help-request-card__author,
+.help-request-card__responder {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #777777;
+  font-size: 15px;
+}
+
+.help-request-card__avatar {
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  flex: 0 0 24px;
+  display: grid;
+  place-items: center;
+  color: #777777;
+  font-size: 12px;
+  background: #eeeeee;
+  border-radius: 50%;
+}
+
+.help-request-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.help-request-card__contact {
+  padding: 0;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.help-request-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.help-request-card__button {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.help-request-card__button--primary {
+  color: #ffffff;
+  background: #073764;
+  border: 1px solid #073764;
+}
+
+.help-request-card__button--primary:hover:not(:disabled) {
+  background: #062f55;
+}
+
+.help-request-card__button--secondary {
+  color: #111111;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+}
+
+.help-request-card__button--secondary:hover:not(:disabled) {
+  background: #f7f7f7;
+}
+
+.help-request-card__button--danger {
+  color: #ffffff;
+  background: #d70000;
+  border: 1px solid #d70000;
+}
+
+.help-request-card__button--danger:hover:not(:disabled) {
+  background: #b80000;
+}
+
+.help-request-card__button--success {
+  color: #ffffff;
+  background: #00b050;
+  border: 1px solid #00b050;
+}
+
+.help-request-card__button--success:hover:not(:disabled) {
+  background: #009544;
+}
+
+.help-request-card__button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.help-request-card__response {
+  margin-top: 22px;
+}
+
+.help-request-card__response-title {
+  margin-bottom: 12px;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.help-request-card__response-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.help-request-card__note {
+  margin-top: 14px;
+  min-height: 44px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #777777;
+  font-size: 15px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.help-request-card__note img {
+  width: 16px;
+  height: 16px;
+}
